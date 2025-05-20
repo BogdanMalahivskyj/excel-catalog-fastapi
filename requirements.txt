@@ -2,4 +2,3 @@ fastapi
 uvicorn
 openpyxl
 pillow
-python-multipart
