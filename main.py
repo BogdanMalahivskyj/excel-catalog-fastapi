@@ -115,7 +115,6 @@ async def generate_catalog(
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
         
-"""
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -207,5 +206,80 @@ return StreamingResponse(
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
         """
+from fastapi import FastAPI, UploadFile, File
+from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from typing import List
+from io import BytesIO
+from datetime import datetime
+from openpyxl import load_workbook
+from openpyxl.drawing.image import Image as XLImage
+from PIL import Image
 
+app = FastAPI()
+
+# Дозвіл CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+def generate_filename(base: str = "catalog", ext: str = ".xlsx") -> str:
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{base}_{timestamp}{ext}"
+
+def resize_image_preserve_quality(image_bytes: bytes, size=(150, 150)) -> BytesIO:
+    img = Image.open(BytesIO(image_bytes)).convert("RGBA")
+    img.thumbnail(size, Image.LANCZOS)
+    output = BytesIO()
+    img.save(output, format="PNG", optimize=True, compress_level=1)
+    output.seek(0)
+    return output
+
+@app.get("/")
+def root():
+    return {"status": "ok"}
+
+@app.post("/generate_catalog")
+async def generate_catalog(
+    excel_file: UploadFile = File(...),
+    images: List[UploadFile] = File(...)
+):
+    try:
+        wb = load_workbook(filename=BytesIO(await excel_file.read()))
+        ws = wb.active
+
+        start_row = 2
+        image_column = "A"
+        row_height = 75
+
+        for i, upload in enumerate(images):
+            raw_image = await upload.read()
+            img_io = resize_image_preserve_quality(raw_image)
+            img = XLImage(img_io)
+            img.width = 100
+            img.height = 100
+            cell = f"{image_column}{start_row + i}"
+            ws.add_image(img, cell)
+            ws.row_dimensions[start_row + i].height = row_height
+
+        output = BytesIO()
+        wb.save(output)
+        output.seek(0)
+
+        filename = generate_filename()
+        return StreamingResponse(
+            output,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={
+                "Content-Disposition": f"attachment; filename={filename}",
+                "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            }
+        )
+
+    except Exception as e:
+        return JSONResponse(status_code=500, content={"error": str(e)})
 
