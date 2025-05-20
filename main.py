@@ -36,3 +36,13 @@ async def generate_catalog(excel: UploadFile = File(...), images: List[UploadFil
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         headers={"Content-Disposition": "attachment; filename=catalog_ready.xlsx"}
     )
+
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # або конкретно: ["https://for-vercel-sigma.vercel.app"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
