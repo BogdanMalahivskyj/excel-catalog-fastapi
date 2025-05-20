@@ -17,7 +17,7 @@ async def generate_catalog(excel: UploadFile = File(...), images: List[UploadFil
     wb = load_workbook(filename=io.BytesIO(await excel.read()))
     ws = wb.active
 
-    for idx, image_file in enumerate(images, start=2):  # починаємо з другого рядка
+    for idx, image_file in enumerate(images, start=2):
         img_data = await image_file.read()
         image = Image.open(io.BytesIO(img_data))
         output = io.BytesIO()
@@ -31,4 +31,8 @@ async def generate_catalog(excel: UploadFile = File(...), images: List[UploadFil
     output_stream = io.BytesIO()
     wb.save(output_stream)
     output_stream.seek(0)
-    return StreamingResponse(output_stream, media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", headers={"Content-Disposition": "attachment; filename=catalog_ready.xlsx"})
+    return StreamingResponse(
+        output_stream,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": "attachment; filename=catalog_ready.xlsx"}
+    )
