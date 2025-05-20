@@ -114,7 +114,7 @@ async def generate_catalog(
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
-        """
+        
 
 from fastapi import FastAPI, UploadFile, File
 from fastapi.responses import StreamingResponse, JSONResponse
@@ -189,3 +189,38 @@ async def generate_catalog(
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
+        """
+
+from datetime import datetime
+
+def generate_filename(base: str = "catalog", ext: str = ".xlsx") -> str:
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return f"{base}_{timestamp}{ext}"
+
+def resize_image_preserve_quality(image_bytes: bytes, size=(150, 150)) -> BytesIO:
+    img = Image.open(BytesIO(image_bytes)).convert("RGBA")  # зберігає прозорість
+    img.thumbnail(size, Image.LANCZOS)
+    output = BytesIO()
+    img.save(output, format="PNG", optimize=True, compress_level=1)
+    output.seek(0)
+    return output
+
+# ... всередині generate_catalog:
+
+img_io = resize_image_preserve_quality(raw_image)
+img = XLImage(img_io)
+img.width = 100
+img.height = 100
+ws.add_image(img, cell)
+
+# ... при відповіді:
+filename = generate_filename()
+return StreamingResponse(
+    output,
+    media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    headers={
+        "Content-Disposition": f"attachment; filename={filename}",
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    }
+)
+
