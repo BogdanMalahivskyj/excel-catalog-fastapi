@@ -271,14 +271,24 @@ async def generate_catalog(
         output.seek(0)
 
         filename = generate_filename()
-        return StreamingResponse(
-            output,
-            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-            headers={
-                "Content-Disposition": f"attachment; filename={filename}",
-                "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
-            }
-        )
+        #return StreamingResponse(
+          #  output,
+           # media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          #  headers={
+            #    "Content-Disposition": f"attachment; filename={filename}",
+             #   "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        #    }
+      #  )
+
+    return StreamingResponse(
+    output,
+    media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    headers={
+        "Content-Disposition": f"attachment; filename=\"{filename}\"; filename*=UTF-8''{filename}",
+        "Content-Type": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "Cache-Control": "no-cache"
+    }
+)
 
     except Exception as e:
         return JSONResponse(status_code=500, content={"error": str(e)})
